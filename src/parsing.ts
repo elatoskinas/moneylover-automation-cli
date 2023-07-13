@@ -37,8 +37,6 @@ export const extractExcelTransactions = (filepath: string, parsingConfiguration:
     const sheet = workbook.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
-    console.log(rows);
-
     return rows.map((row) => {
         return {
             amount: parseAmount(row),
@@ -47,4 +45,15 @@ export const extractExcelTransactions = (filepath: string, parsingConfiguration:
             category: parseCategory?.(row) ?? 'UNKNOWN',
         }
     });
+}
+
+export const extractExcelTransactionsToFile = (filepath: string, parsingConfiguration: ExcelParsingConfiguration, outputFilePath: string): void => {
+    const transactions = extractExcelTransactions(filepath, parsingConfiguration);
+    const stringifiedTransactions = JSON.stringify(transactions, undefined, 4);
+    fs.writeFileSync(outputFilePath, stringifiedTransactions);
+}
+
+export const readTransactionsFromFile = (filepath: string): SubmittableTransactionEntry[] => {
+    // TODO: replace JSON.parse with zod
+    return JSON.parse(fs.readFileSync(filepath).toString());
 }

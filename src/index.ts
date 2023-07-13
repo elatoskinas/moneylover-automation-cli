@@ -1,12 +1,30 @@
-import { MoneyloverClient } from './client';
-import { BankParsingConfiguration, extractExcelTransactions } from './parsing';
+import { AddTransactionRequest, MoneyloverClient } from './client';
+import { SubmittableTransactionEntry } from './data';
+import { BankParsingConfiguration, extractExcelTransactions, extractExcelTransactionsToFile, readTransactionsFromFile } from './parsing';
+
+const mapSubmittableTransactionsToClientRequests = (
+    transactions: SubmittableTransactionEntry[],
+    targetAccount: string,
+): AddTransactionRequest[] => {
+    return transactions.map((transaction) => ({
+        category: transaction.category,
+        account: targetAccount,
+        amount: transaction.amount,
+        displayDate: transaction.date,
+        note: transaction.description,
+    }));
+};
 
 (async () => {
     const client = new MoneyloverClient(process.env.ACCESS_TOKEN);
 
+    const inputFile = 'transactions.xls';
+    const inputTransactionFile = 'transactions.json';
+
+    extractExcelTransactionsToFile(inputFile, BankParsingConfiguration, inputTransactionFile);
+    const transactions = readTransactionsFromFile(inputTransactionFile);
+
     if (client) {
-        const transactions = extractExcelTransactions('transactions.xls', BankParsingConfiguration);
-        console.log(transactions);
         process.exit(0);
     }
 
@@ -21,6 +39,7 @@ import { BankParsingConfiguration, extractExcelTransactions } from './parsing';
 
     const [wallet] = wallets.data;
     console.log('Defaulting to first wallet:', wallet.name);
+    const requests = mapSubmittableTransactionsToClientRequests(transactions, wallet._id);
 
     const categories = await client.getCategories({
         walletId: wallet._id,
@@ -32,12 +51,7 @@ import { BankParsingConfiguration, extractExcelTransactions } from './parsing';
     }
 
     console.log('Adding transaction...');
-    await client.addTransaction({
-        account: wallet._id,
-        category: category._id,
-        amount: amount,
-        displayDate: date,
-    });
+    await client.addTransaction(requests[0]);
     console.log('Done!');
 })().catch((err) => {
     console.error(err);
