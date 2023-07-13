@@ -48,7 +48,13 @@ export class MoneyloverClient {
     }
 
     async addTransaction(request: AddTransactionRequest): Promise<void> {
-        await axios.post(`${MONEYLOVER_BASE_URL}/transaction/add`, request, this.getAuthorizationConfiguration());
+        await axios
+            .post(`${MONEYLOVER_BASE_URL}/transaction/add`, request, this.getAuthorizationConfiguration())
+            .then((res) => {
+                if (res.data.error) {
+                    throw new Error(res.data);
+                }
+            });
     };
 
     getAuthorizationConfiguration() {

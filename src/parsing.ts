@@ -18,7 +18,7 @@ export const BankParsingConfiguration: ExcelParsingConfiguration = {
         return `${year}-${month}-${day}`;
     },
     parseAmount: (row: unknown) => {
-        return Number.parseInt(row['amount']);
+        return Number.parseFloat(row['amount']);
     },
     parseDescription: (row: unknown) => {
         return row['description'];

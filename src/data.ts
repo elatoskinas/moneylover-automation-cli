@@ -4,4 +4,5 @@ export interface SubmittableTransactionEntry {
     /** YYYY-MM-DD format */
     date: string;
     category: string;
+    isProcessed?: boolean;
 }

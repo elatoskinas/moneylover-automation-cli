@@ -1,59 +1,60 @@
-import { AddTransactionRequest, MoneyloverClient } from './client';
-import { SubmittableTransactionEntry } from './data';
-import { BankParsingConfiguration, extractExcelTransactions, extractExcelTransactionsToFile, readTransactionsFromFile } from './parsing';
+import { MoneyloverClient } from './client';
+import { dumpCategories, parseExcel, postTransactions } from './commands';
+import cli from 'command-line-args';
 
-const mapSubmittableTransactionsToClientRequests = (
-    transactions: SubmittableTransactionEntry[],
-    targetAccount: string,
-): AddTransactionRequest[] => {
-    return transactions.map((transaction) => ({
-        category: transaction.category,
-        account: targetAccount,
-        amount: transaction.amount,
-        displayDate: transaction.date,
-        note: transaction.description,
-    }));
-};
+const client = new MoneyloverClient(process.env.ACCESS_TOKEN);
 
-(async () => {
-    const client = new MoneyloverClient(process.env.ACCESS_TOKEN);
+const commandDefinitions: cli.OptionDefinition[] = [
+    { name: 'command', defaultOption: true },
+];
 
-    const inputFile = 'transactions.xls';
-    const inputTransactionFile = 'transactions.json';
+const dumpCategoriesDefinitions: cli.OptionDefinition[] = [
+    { name: 'outputPath', defaultOption: true },
+];
 
-    extractExcelTransactionsToFile(inputFile, BankParsingConfiguration, inputTransactionFile);
-    const transactions = readTransactionsFromFile(inputTransactionFile);
+const parseExcelDefinitions: cli.OptionDefinition[] = [
+    { name: 'paths', defaultOption: true, multiple: true },
+];
 
-    if (client) {
-        process.exit(0);
+const postTransactionsDefinitions: cli.OptionDefinition[] = [
+    { name: 'inputPath', defaultOption: true },
+];
+
+const mainOptions = cli(commandDefinitions, { stopAtFirstUnknown: true })
+
+const argv = mainOptions._unknown || []
+const { command } = mainOptions;
+
+if (command === 'dump-categories') {
+    const dumpCategoriesOptions = cli(dumpCategoriesDefinitions, { argv });
+    const dumpCategoriesRequest = {
+        outputPath: dumpCategoriesOptions.outputPath,
+    };
+
+    dumpCategories(client, dumpCategoriesRequest);
+} else if (command === 'parse-excel') {
+    const parseExcelOptions = cli(parseExcelDefinitions, { argv });
+    console.log(parseExcelOptions);
+    const { paths } = parseExcelOptions;
+
+    if (paths.length !== 2) {
+        throw new Error(`Two positional args are expected: parse-excel <input-path> <output-path>`);
     }
 
-    const selectedCategory = 'Bills';
-    const amount = 42;
-    const date = '2023-07-13';
+    const [inputPath, outputPath] = paths;
+    const parseExcelRequest = {
+        inputPath,
+        outputPath,
+    };
 
-    const wallets = await client.getWallets();
-    if (wallets.data.length === 0) {
-        throw new Error('Could not find any wallets');
-    }
+    parseExcel(parseExcelRequest);
+} else if (command === 'post-transactions') {
+    const postTransactionsOptions = cli(postTransactionsDefinitions, { argv });
+    const postTransactionsRequest = {
+        inputPath: postTransactionsOptions.inputPath,
+    };
 
-    const [wallet] = wallets.data;
-    console.log('Defaulting to first wallet:', wallet.name);
-    const requests = mapSubmittableTransactionsToClientRequests(transactions, wallet._id);
-
-    const categories = await client.getCategories({
-        walletId: wallet._id,
-    });
-    console.log(categories);
-    const category = categories.data.find((category) => category.name === selectedCategory);
-    if (!category) {
-        throw new Error(`Cannot resolve category: ${selectedCategory}`);
-    }
-
-    console.log('Adding transaction...');
-    await client.addTransaction(requests[0]);
-    console.log('Done!');
-})().catch((err) => {
-    console.error(err);
-    process.exit(-1);
-});
+    postTransactions(client, postTransactionsRequest);
+} else {
+    throw new Error(`Unrecognized command: ${command}`);
+}
