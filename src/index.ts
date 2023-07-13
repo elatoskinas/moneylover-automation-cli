@@ -1,7 +1,14 @@
 import { MoneyloverClient } from './client';
+import { BankParsingConfiguration, extractExcelTransactions } from './parsing';
 
 (async () => {
     const client = new MoneyloverClient(process.env.ACCESS_TOKEN);
+
+    if (client) {
+        const transactions = extractExcelTransactions('transactions.xls', BankParsingConfiguration);
+        console.log(transactions);
+        process.exit(0);
+    }
 
     const selectedCategory = 'Bills';
     const amount = 42;
