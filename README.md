@@ -1,7 +1,9 @@
 # MoneyLover Trnasaction automation
+
 A CLI script suite to automate [MoneyLover](https://moneylover.me/) transaction submission flows. Provides tools to parse Excel inputs, transform them and submit them to the MoneyLover app.
 
 ## Setup
+
 1. `npm install` to install all dependencies
 2. Retrieve the `ACCESS_TOKEN` by checking the network request Authorization header in the [MoneyLover web app](https://web.moneylover.me/)
 3. Create an `.env` file with the `ACCESS_TOKEN` field. Paste in the access token from the previous step without the `AuthJWT` prefix.
@@ -15,6 +17,7 @@ ACCESS_TOKEN=<access tokekn>
 ## Usage
 
 ### Data preparation
+
 The expected data to be passed in to the submission flow is expected to be a JSON file on format:
 
 ```
@@ -58,6 +61,7 @@ npm start dump-categories <output-path>
 Dumps the defined MoneyLover categories for the first user wallet to the target text file. Useful to get the file handy locally.
 
 ### Submission
+
 ```
 npm start post-transactions <input-path>
 ```
@@ -65,7 +69,7 @@ npm start post-transactions <input-path>
 Takes in a transactions file (as expected from the previous section) and submits them to the MoneyLover user's first wallet.
 
 ## Pending enhancements
+
 - Integrate zod parsing
-- Integrate prettier
 - Continue processing transactions on errors
 - Allow wallet input
