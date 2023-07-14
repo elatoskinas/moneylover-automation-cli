@@ -21,6 +21,10 @@ export interface LabelTransactionCategoriesRequest {
     inputPath: string;
 }
 
+export interface RollupTransactionsRequest {
+    inputPath: string;
+}
+
 const getCategoryNamesPerWallet = async(client: MoneyloverClient, walletName?: string): Promise<string[]> => {
     const wallets = await client.getWallets();
     const wallet = walletName ? wallets.data.find((wallet) => wallet.name === walletName) : wallets.data[0];
@@ -91,7 +95,7 @@ const writeProcessedTransaction = (transactions: SubmittableTransactionEntry[], 
  */
 export const postTransactions = async(client: MoneyloverClient, request: PostTransactionsRequest) => {
     const { inputPath } = request;
-    const transactions = readTransactionsFromFile(inputPath).slice(0, 2).filter((transaction) => {
+    const transactions = readTransactionsFromFile(inputPath).filter((transaction) => {
         return !transaction.isProcessed;
     });
 
@@ -108,8 +112,9 @@ export const postTransactions = async(client: MoneyloverClient, request: PostTra
     });
 
     const requests = mapSubmittableTransactionsToClientRequests(transactions, wallet._id, categories.data);
+    console.log('Total transactions to process:', requests.length);
 
-    for (let i = 0; i < 1; ++i) {
+    for (let i = 0; i < requests.length; ++i) {
         console.log(`Adding transaction... (${i+1}/${requests.length})`);
         await client.addTransaction(requests[i]);
         writeProcessedTransaction(transactions, i, inputPath);
@@ -140,4 +145,46 @@ export const labelCategories = async(client: MoneyloverClient, request: LabelTra
         transaction.category = selectedOption.category;
         fs.writeFileSync(inputPath, JSON.stringify(transactions, undefined, 4));
     }
+}
+
+export const rollupTransactions = (request: RollupTransactionsRequest) => {
+    const { inputPath } = request;
+    const transactions = readTransactionsFromFile(inputPath);
+    console.log('Pre-rollup transactions:', transactions.length);
+
+    // Map: date -> category -> aggregate transaction
+    const transactionMap: Record<string, Record<string, (SubmittableTransactionEntry & { index: number })>> = {};
+    const processedTransactions: (SubmittableTransactionEntry & { index: number })[] = [];
+
+    transactions.forEach((transaction, index) => {
+        const transactionWithIndex = { ...transaction, index };
+
+        if (transaction.isProcessed) {
+            processedTransactions.push(transactionWithIndex);
+            return;
+        }
+
+        if (!transactionMap[transaction.date]) {
+            transactionMap[transaction.date] = {
+                [transaction.category]: transactionWithIndex,
+            };
+        } else if (!transactionMap[transaction.date][transaction.category]) {
+            transactionMap[transaction.date][transaction.category] = transactionWithIndex;
+        } else {
+            const currentTransaction = transactionMap[transaction.date][transaction.category];
+            currentTransaction.amount += transaction.amount;
+            currentTransaction.index = Math.max(currentTransaction.index, index);
+        }
+    });
+
+    const flatTransactions = Object.entries(transactionMap).flatMap(([,mapEntries]) => {
+        return Object.values(mapEntries);
+    });
+    const newTransactions = [...processedTransactions, ...flatTransactions].sort((a, b) => a.index - b.index).map((transaction) => {
+        const { index, ...transactionWIthoutIndex } = transaction;
+        return transactionWIthoutIndex;
+    });
+    console.log('Post-rollup transactions:', newTransactions.length);
+
+    fs.writeFileSync(inputPath, JSON.stringify(newTransactions, undefined, 4));
 }
