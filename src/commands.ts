@@ -36,6 +36,9 @@ const getCategoryNamesPerWallet = async(client: MoneyloverClient, walletName?: s
     return categories.data.map((category) => category.name);
 }
 
+/**
+ * Dumps the user's wallet categories to an output file
+ */
 export const dumpCategories = async(client: MoneyloverClient, request: DumpCategoriesRequest): Promise<void> => {
     const { outputPath } = request;
 
@@ -45,6 +48,9 @@ export const dumpCategories = async(client: MoneyloverClient, request: DumpCateg
     fs.writeFileSync(outputPath, categoryNames);
 };
 
+/**
+ * Parses & saves an Excel into a submittable transactions file
+ */
 export const parseExcel = async(request: ParseExcelRequest) => {
     const { inputPath, outputPath } = request;
     extractExcelTransactionsToFile(inputPath, BankParsingConfiguration, outputPath);
@@ -79,6 +85,10 @@ const writeProcessedTransaction = (transactions: SubmittableTransactionEntry[], 
     fs.writeFileSync(inputPath, JSON.stringify(transactions, undefined, 4));
 }
 
+/**
+ * Submits transactions from a submittable transacations file to
+ * the MoneyLover user's wallet
+ */
 export const postTransactions = async(client: MoneyloverClient, request: PostTransactionsRequest) => {
     const { inputPath } = request;
     const transactions = readTransactionsFromFile(inputPath).slice(0, 2).filter((transaction) => {
@@ -106,6 +116,9 @@ export const postTransactions = async(client: MoneyloverClient, request: PostTra
     }
 }
 
+/**
+ * Prompts the user to input categories for transactions which have unknown fields
+ */
 export const labelCategories = async(client: MoneyloverClient, request: LabelTransactionCategoriesRequest) => {
     const { inputPath } = request;
     const transactions = readTransactionsFromFile(inputPath);

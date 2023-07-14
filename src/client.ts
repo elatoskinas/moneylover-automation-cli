@@ -28,6 +28,9 @@ export interface GetCategoriesResponse {
 
 const MONEYLOVER_BASE_URL = 'https://web.moneylover.me/api';
 
+/**
+ * Client to interface with internal MoneyLover APIs.
+ */
 export class MoneyloverClient {
     private jwtToken: string;
 

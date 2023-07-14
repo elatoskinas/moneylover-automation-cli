@@ -3,9 +3,13 @@ import * as fs from 'fs';
 import { SubmittableTransactionEntry } from './data';
 
 export interface ExcelParsingConfiguration {
+    /** Parses the date from a row into a YYYY-MM-DD date */
     parseDate: (row: unknown) => string;
+    /** Parses the transaction amount from a row into a numeric amount */
     parseAmount: (row: unknown) => number;
+    /** Parses the description from a row, if available */
     parseDescription: (row: unknown) => string | undefined;
+    /** Parses the category from a row, if available */
     parseCategory?: (row: unknown) => string | undefined;
 }
 
@@ -25,6 +29,9 @@ export const BankParsingConfiguration: ExcelParsingConfiguration = {
     },
 }
 
+/**
+ * Parses an Excel and returns the parsed transactions using the target configuration
+ */
 export const extractExcelTransactions = (filepath: string, parsingConfiguration: ExcelParsingConfiguration): SubmittableTransactionEntry[] => {
     const { parseDate, parseAmount, parseDescription, parseCategory } = parsingConfiguration;
 
@@ -47,12 +54,18 @@ export const extractExcelTransactions = (filepath: string, parsingConfiguration:
     });
 }
 
+/**
+ * Parses an Excel and saves the submittable transactions to the output file
+ */
 export const extractExcelTransactionsToFile = (filepath: string, parsingConfiguration: ExcelParsingConfiguration, outputFilePath: string): void => {
     const transactions = extractExcelTransactions(filepath, parsingConfiguration);
     const stringifiedTransactions = JSON.stringify(transactions, undefined, 4);
     fs.writeFileSync(outputFilePath, stringifiedTransactions);
 }
 
+/**
+ * Reads submittable transactions from a file
+ */
 export const readTransactionsFromFile = (filepath: string): SubmittableTransactionEntry[] => {
     // TODO: replace JSON.parse with zod
     return JSON.parse(fs.readFileSync(filepath).toString());
