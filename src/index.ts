@@ -1,5 +1,5 @@
 import { MoneyloverClient } from './client';
-import { dumpCategories, parseExcel, postTransactions } from './commands';
+import { dumpCategories, parseExcel, postTransactions, labelCategories } from './commands';
 import cli from 'command-line-args';
 
 const client = new MoneyloverClient(process.env.ACCESS_TOKEN);
@@ -17,6 +17,10 @@ const parseExcelDefinitions: cli.OptionDefinition[] = [
 ];
 
 const postTransactionsDefinitions: cli.OptionDefinition[] = [
+    { name: 'inputPath', defaultOption: true },
+];
+
+const labelCategoriesDefinitions: cli.OptionDefinition[] = [
     { name: 'inputPath', defaultOption: true },
 ];
 
@@ -55,6 +59,13 @@ if (command === 'dump-categories') {
     };
 
     postTransactions(client, postTransactionsRequest);
+} else if (command === 'label-categories') {
+    const labelCategoriesOptions = cli(labelCategoriesDefinitions, { argv });
+    const labelCategoriesRequest = {
+        inputPath: labelCategoriesOptions.inputPath,
+    };
+
+    labelCategories(client, labelCategoriesRequest);
 } else {
     throw new Error(`Unrecognized command: ${command}`);
 }

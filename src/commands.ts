@@ -2,6 +2,7 @@ import { AddTransactionRequest, GetCategoriesResponse, MoneyloverClient } from "
 import * as fs from 'fs';
 import { BankParsingConfiguration, extractExcelTransactionsToFile, readTransactionsFromFile } from "./parsing";
 import { SubmittableTransactionEntry } from "./data";
+import { prompt } from 'enquirer';
 
 export interface DumpCategoriesRequest {
     outputPath: string;
@@ -16,21 +17,29 @@ export interface PostTransactionsRequest {
     inputPath: string;
 }
 
-export const dumpCategories = async(client: MoneyloverClient, request: DumpCategoriesRequest): Promise<void> => {
-    const { outputPath } = request;
+export interface LabelTransactionCategoriesRequest {
+    inputPath: string;
+}
 
+const getCategoryNamesPerWallet = async(client: MoneyloverClient, walletName?: string): Promise<string[]> => {
     const wallets = await client.getWallets();
-    if (wallets.data.length === 0) {
-        throw new Error('Could not find any wallets');
-    }
+    const wallet = walletName ? wallets.data.find((wallet) => wallet.name === walletName) : wallets.data[0];
 
-    const [wallet] = wallets.data;
-    console.log('Defaulting to first wallet:', wallet.name);
+    if (!wallet) {
+        throw new Error(walletName ? `Could not find wallet with name: ${walletName}` : 'Could not find any wallets');
+    }
 
     const categories = await client.getCategories({
         walletId: wallet._id,
     });
-    const categoryNames = categories.data.map((category) => category.name).join('\n');
+
+    return categories.data.map((category) => category.name);
+}
+
+export const dumpCategories = async(client: MoneyloverClient, request: DumpCategoriesRequest): Promise<void> => {
+    const { outputPath } = request;
+
+    const categoryNames = (await getCategoryNamesPerWallet(client)).join('\n');
     console.log(categoryNames);
 
     fs.writeFileSync(outputPath, categoryNames);
@@ -40,7 +49,6 @@ export const parseExcel = async(request: ParseExcelRequest) => {
     const { inputPath, outputPath } = request;
     extractExcelTransactionsToFile(inputPath, BankParsingConfiguration, outputPath);
 }
-
 
 const mapSubmittableTransactionsToClientRequests = (
     transactions: SubmittableTransactionEntry[],
@@ -95,5 +103,28 @@ export const postTransactions = async(client: MoneyloverClient, request: PostTra
         console.log(`Adding transaction... (${i+1}/${requests.length})`);
         await client.addTransaction(requests[i]);
         writeProcessedTransaction(transactions, i, inputPath);
+    }
+}
+
+export const labelCategories = async(client: MoneyloverClient, request: LabelTransactionCategoriesRequest) => {
+    const { inputPath } = request;
+    const transactions = readTransactionsFromFile(inputPath);
+
+    const categoryNames = await getCategoryNamesPerWallet(client);
+
+    for (const transaction of transactions) {
+        if (transaction.category !== 'UNKNOWN') {
+            continue;
+        }
+
+        console.log(transaction);
+        const selectedOption = await prompt<Pick<SubmittableTransactionEntry, 'category'>>({
+            type: 'autocomplete',
+            name: 'category',
+            message: 'Select a category for the above transaction',
+            choices: categoryNames,
+        });
+        transaction.category = selectedOption.category;
+        fs.writeFileSync(inputPath, JSON.stringify(transactions, undefined, 4));
     }
 }

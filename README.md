@@ -1,12 +1,9 @@
 # MoneyLover Trnasaction automation
 
-TODO:
-- Scripts:
-  - Process transactions
-- Rate-limiting for transaction posting
-- Error mechanism
+## Pending enhancements
+- Rate-limiting
 - Integrate zod parsing
 - Integrate prettier
-- Docs
-  - Usage & flow guide
-  - Method-level
+- Continue processing transactions on errors
+- Docs: Usage & flow guide
+- Docs: Method-level
