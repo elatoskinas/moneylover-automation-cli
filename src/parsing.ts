@@ -29,13 +29,26 @@ export const BankParsingConfiguration: ExcelParsingConfiguration = {
     },
 }
 
+export const WiseParsingConfiguration: ExcelParsingConfiguration = {
+    parseDate: (row) => {
+        const [day, month, year] = row['Date'].toString().split('-');
+        return `${year}-${month}-${day}`;
+    },
+    parseAmount: (row: unknown) => {
+        return Number.parseFloat(row['Amount']);
+    },
+    parseDescription: (row: unknown) => {
+        return row['Description'];
+    },
+}
+
 /**
  * Parses an Excel and returns the parsed transactions using the target configuration
  */
 export const extractExcelTransactions = (filepath: string, parsingConfiguration: ExcelParsingConfiguration): SubmittableTransactionEntry[] => {
     const { parseDate, parseAmount, parseDescription, parseCategory } = parsingConfiguration;
 
-    const workbook = XLSX.readFile(filepath);
+    const workbook = XLSX.readFile(filepath, { raw: true });
     
     if (workbook.SheetNames.length === 0) {
         throw new Error(`Empty Excel Sheet specified in path: ${filepath}`);

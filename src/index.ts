@@ -1,6 +1,7 @@
 import { MoneyloverClient } from './client';
 import { dumpCategories, parseExcel, postTransactions, labelCategories, rollupTransactions } from './commands';
 import cli from 'command-line-args';
+import { BankParsingConfiguration, WiseParsingConfiguration } from './parsing';
 
 const client = new MoneyloverClient(process.env.ACCESS_TOKEN);
 
@@ -45,17 +46,19 @@ if (command === 'dump-categories') {
     console.log(parseExcelOptions);
     const { paths } = parseExcelOptions;
 
-    if (paths.length !== 2) {
+    if (paths.length < 2) {
         throw new Error(`Two positional args are expected: parse-excel <input-path> <output-path>`);
     }
 
-    const [inputPath, outputPath] = paths;
+    // TODO: parser should come as an option : --parser <parser>
+    const [inputPath, outputPath, parser] = paths;
     const parseExcelRequest = {
         inputPath,
         outputPath,
     };
 
-    parseExcel(parseExcelRequest);
+    const parsingConfiguration = parser === 'wise' ? WiseParsingConfiguration : BankParsingConfiguration;
+    parseExcel(parseExcelRequest, parsingConfiguration);
 } else if (command === 'post-transactions') {
     const postTransactionsOptions = cli(postTransactionsDefinitions, { argv });
     const postTransactionsRequest = {

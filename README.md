@@ -65,9 +65,7 @@ npm start post-transactions <input-path>
 Takes in a transactions file (as expected from the previous section) and submits them to the MoneyLover user's first wallet.
 
 ## Pending enhancements
-- Rate-limiting
 - Integrate zod parsing
 - Integrate prettier
 - Continue processing transactions on errors
 - Allow wallet input
-- Extend with parser option support

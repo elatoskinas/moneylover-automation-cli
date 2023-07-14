@@ -1,6 +1,6 @@
 import { AddTransactionRequest, GetCategoriesResponse, MoneyloverClient } from "./client";
 import * as fs from 'fs';
-import { BankParsingConfiguration, extractExcelTransactionsToFile, readTransactionsFromFile } from "./parsing";
+import { BankParsingConfiguration, ExcelParsingConfiguration, extractExcelTransactionsToFile, readTransactionsFromFile } from "./parsing";
 import { SubmittableTransactionEntry } from "./data";
 import { prompt } from 'enquirer';
 
@@ -55,9 +55,9 @@ export const dumpCategories = async(client: MoneyloverClient, request: DumpCateg
 /**
  * Parses & saves an Excel into a submittable transactions file
  */
-export const parseExcel = async(request: ParseExcelRequest) => {
+export const parseExcel = async(request: ParseExcelRequest, parsingConfiguration: ExcelParsingConfiguration = BankParsingConfiguration) => {
     const { inputPath, outputPath } = request;
-    extractExcelTransactionsToFile(inputPath, BankParsingConfiguration, outputPath);
+    extractExcelTransactionsToFile(inputPath, parsingConfiguration, outputPath);
 }
 
 const mapSubmittableTransactionsToClientRequests = (
