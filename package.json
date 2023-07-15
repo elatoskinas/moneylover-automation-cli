@@ -1,7 +1,7 @@
 {
   "name": "moneylover-automation",
   "version": "1.0.0",
-  "description": "",
+  "description": "CLI tools to automate MoneyLover App transaction posting",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
@@ -9,8 +9,8 @@
     "format": "prettier . --write"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Evaldas Latoškinas",
+  "license": "MIT",
   "devDependencies": {
     "@types/command-line-args": "^5.2.0",
     "@types/puppeteer": "^7.0.4",
